@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Open World Roam Demo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="hud">Use WASD / Arrow keys to move. Move the mouse to look around.</div>
+  <div id="controls">
+    <label for="perspective">Perspective</label>
+    <select id="perspective">
+      <option value="top">Top-down</option>
+      <option value="follow">Follow (close)</option>
+      <option value="overview">Overview (zoomed out)</option>
+    </select>
+    <label style="margin-left:10px"><input type="checkbox" id="mode3d"> 3D Mode</label>
+    <label style="margin-left:8px">Graphics</label>
+    <select id="graphics" style="margin-left:4px">
+      <option value="low">Low</option>
+      <option value="medium" selected>Medium</option>
+      <option value="high">High</option>
+    </select>
+    <label style="margin-left:8px">Character</label>
+    <select id="character" style="margin-left:4px">
+      <option value="yellow">Explorer (Yellow)</option>
+      <option value="blue">Scout (Blue)</option>
+      <option value="green">Ranger (Green)</option>
+    </select>
+    <label style="margin-left:10px"><input type="checkbox" id="multiplayerToggle"> Multiplayer</label>
+    <input id="serverUrl" value="ws://localhost:8765" style="width:220px;margin-left:10px" />
+    <button id="connectBtn">Connect</button>
+    <span id="status" style="margin-left:8px;color:#9f9"></span>
+  </div>
+  <canvas id="world"></canvas>
+  <div id="scene3d" style="display:none;position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:0"></div>
+  <script src="main.js"></script>
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+  <script src="main3d.js"></script>
+</body>
+</html>
