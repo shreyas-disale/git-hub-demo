@@ -272,4 +272,3 @@ function draw(){
   if(window.is3D) return; // 2D renderer paused when in 3D mode
   _origDraw();
 }
-    

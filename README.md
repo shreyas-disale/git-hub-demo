@@ -31,37 +31,30 @@ http://localhost:8000/
 
 Controls: Use WASD / Arrow keys to move. Use the Perspective selector and the Multiplayer checkbox in the top-left.
 
-Multiplayer (quick start)
+Serving and secure public link
 
-1. Install the Python dependency:
+Multiplayer has been removed to simplify hosting and to make a secure public link easier to provide.
 
-```powershell
-pip install -r requirements.txt
-```
+Local server
 
-2. Start the WebSocket multiplayer server (separate terminal):
+Run the static server and open the demo in your browser (Firefox works fine):
 
 ```powershell
-python .\tools\multiplayer_server.py
+python -m http.server 8000 --directory ".\game"
 ```
 
-3. Start the static server to serve the web client (another terminal):
+Open in Firefox:
 
-```powershell
-python .\tools\server.py 8000
-```
+http://127.0.0.1:8000/
 
-4. Open `http://localhost:8000/`, enable Multiplayer via the checkbox in the top-left, then click Connect.
+Public (HTTPS) hosting — recommended
 
-Troubleshooting & "link did not start"
+Option 1 — Netlify (very easy)
+- Go to https://app.netlify.com/drop and drag the `game/` folder onto the page. Netlify will upload and give you an HTTPS link instantly. No backend required.
 
-- If you opened `index.html` directly using the file:// protocol the browser may block loading `map.json` or the WebSocket may not connect. Make sure the static server from step 3 is running and then open `http://localhost:8000/`.
-- If you see a blank page: open the browser developer console (F12) and look for errors (e.g., missing `map.json` or blocked WebSocket). Copy any errors here and I can help debug.
+Option 2 — GitHub Pages (free)
+- Create a repository and push the project. In GitHub settings enable GitHub Pages from the `gh-pages` branch or from the `main` branch's `/docs` folder. Then push the contents of `game/` to that branch/folder and GitHub will publish an HTTPS link.
 
-Hosting a public link
-
-- I can't publish a public link from this environment. If you want a public playable link I can prepare a deploy package and steps for hosting. Options:
-  - Deploy the static client to Vercel/Netlify (static only). Multiplayer will require a separate server.
-  - Deploy the WebSocket server to a cloud VM (or a container on services like DigitalOcean, AWS EC2), and point the client to its ws:// or wss:// address.
-
-If you'd like, tell me which hosting provider you'd prefer and I'll prepare deploy instructions and a small script to run it.
+Notes
+- Because the project is now static you get an HTTPS (protected) link when deployed with Netlify or GitHub Pages that will open in Firefox without mixed-content or WebSocket issues.
+- If you want me to prepare a ZIP with the `game/` folder or a small deploy script for Netlify/GitHub Pages, say which one and I will add it.
