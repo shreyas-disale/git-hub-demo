@@ -8,3 +8,21 @@ canvas#world{display:block; width:100vw; height:100vh}
 /* 3D container sits behind HUD/controls */
 #scene3d{pointer-events:none}
 #scene3d canvas{pointer-events:auto}
+
+/* Settings panel styles */
+#settingsPanel{position:fixed;right:12px;top:60px;z-index:12;width:260px;background:rgba(10,10,10,0.9);color:#fff;padding:12px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.6);font-family:Segoe UI,Arial}
+#settingsPanel.hidden{display:none}
+#settingsPanel h3{margin:0 0 8px 0;font-size:14px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;margin:6px 0}
+.setting-row label{font-size:13px;margin-right:8px}
+#settingsToggle{background:transparent;border:1px solid rgba(255,255,255,0.15);color:#fff;padding:6px 8px;border-radius:6px;cursor:pointer}
+#settingsClose{padding:6px 8px;border-radius:6px}
+
+/* UI theme light */
+body.theme-light #hud, body.theme-light #controls{background:rgba(255,255,255,0.85);color:#111}
+body.theme-light #settingsPanel{background:rgba(255,255,255,0.95);color:#111}
+
+#fpsCounter{pointer-events:none}
+
+#settingsPanel button{margin-left:6px;padding:4px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;cursor:pointer}
+body.theme-light #settingsPanel button{border-color:rgba(0,0,0,0.08);background:rgba(0,0,0,0.02);color:#111}

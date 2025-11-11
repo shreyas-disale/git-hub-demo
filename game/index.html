@@ -8,6 +8,7 @@
 </head>
 <body>
   <div id="hud">Use WASD / Arrow keys to move. Move the mouse to look around.</div>
+  <div id="fpsCounter" title="Current frames per second" style="position:fixed;left:10px;top:46px;z-index:12;color:#fff;font-family:Segoe UI,Arial;font-size:13px">FPS: --</div>
   <div id="controls">
     <label for="perspective">Perspective</label>
     <select id="perspective">
@@ -28,10 +29,58 @@
       <option value="blue">Scout (Blue)</option>
       <option value="green">Ranger (Green)</option>
     </select>
+    <button id="settingsToggle" title="Open settings" style="margin-left:12px">Settings ⚙️</button>
   <!-- Multiplayer removed for static deployment -->
+  </div>
+  <div id="settingsPanel" class="hidden">
+    <h3>Graphics Settings</h3>
+    <div class="setting-row">
+      <label>Presets</label>
+      <div>
+        <button id="presetLow">Low</button>
+        <button id="presetMed">Medium</button>
+        <button id="presetHigh">High</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <label for="shadowQuality">Shadows</label>
+      <select id="shadowQuality">
+        <option value="off">Off</option>
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <label for="particleQuality">Particles</label>
+      <select id="particleQuality">
+        <option value="off">Off</option>
+        <option value="low">Low</option>
+        <option value="medium" selected>Medium</option>
+        <option value="high">High</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <label for="fogDensity">Fog</label>
+      <input id="fogDensity" type="range" min="0" max="1" step="0.01" value="0.15">
+      <span id="fogValue">0.15</span>
+    </div>
+    <div class="setting-row">
+      <label for="bloomToggle">Bloom (glow)</label>
+      <input id="bloomToggle" type="checkbox">
+    </div>
+    <div class="setting-row">
+      <label for="uiTheme">UI Theme</label>
+      <select id="uiTheme">
+        <option value="dark" selected>Dark</option>
+        <option value="light">Light</option>
+      </select>
+    </div>
+    <div style="text-align:right;margin-top:8px"><button id="settingsClose">Close</button></div>
   </div>
   <canvas id="world"></canvas>
   <div id="scene3d" style="display:none;position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:0"></div>
+  <script src="audio.js"></script>
   <script src="main.js"></script>
   <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
   <script src="main3d.js"></script>
