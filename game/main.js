@@ -1,8 +1,19 @@
 // Simple top-down roaming demo with multiple perspectives, infinite procedural map outside initial map,
 // and a pursuing snake that chases the player after a 5s head start.
+// ENHANCED WITH: Vehicle system, advanced physics, debugging, and Indian street features
+
+// Debugging and error logging
+const DEBUG = true;
+function log(...args) { if(DEBUG) console.log('[GAME]', ...args); }
+function error(...args) { console.error('[GAME ERROR]', ...args); }
+log('Game initialization started');
+
 const canvas = document.getElementById('world');
+if(!canvas) { error('Canvas element not found'); throw new Error('Canvas missing'); }
 const ctx = canvas.getContext('2d');
+if(!ctx) { error('Canvas 2D context not available'); throw new Error('2D context failed'); }
 let DPR = window.devicePixelRatio || 1;
+log('Canvas and context ready; DPR=', DPR);
 function resize(){
   canvas.width = Math.floor(innerWidth * DPR);
   canvas.height = Math.floor(innerHeight * DPR);
@@ -13,9 +24,122 @@ addEventListener('resize', resize);
 resize();
 
 // camera / player
-const player = {x:0,y:0,z:0,size:10, speed:200, color:'yellow'};
+const player = {x:0,y:0,z:0,size:10, speed:200, color:'yellow', character: 'soham'};
 const cam = {x:0,y:0,scale:1};
 let perspective = 'top'; // 'top' | 'follow' | 'overview'
+
+// ========== CHARACTER SYSTEM ==========
+// Character profiles with names, colors, personality, and stat modifiers
+const characters = {
+  'soham': {
+    name: 'Soham',
+    title: 'Athlete',
+    description: 'Fast, agile, and athletic. Excels at speed and jumping.',
+    color: '#4d9de0', // Blue
+    icon: '⚡',
+    statMods: {
+      speedMultiplier: 1.15,      // 15% faster base speed
+      accelerationMult: 1.2,       // 20% better acceleration
+      jumpForce: 1.25,             // 25% higher jump
+      frictionMult: 0.95,          // Less friction (more agile)
+      massMultiplier: 0.85         // Lighter, more responsive
+    },
+    personality: 'Athletic and determined, Soham is built for speed and agility.'
+  },
+  'shreyas': {
+    name: 'Shreyas',
+    title: 'All-Rounder',
+    description: 'Perfectly balanced in all aspects. Master of all trades.',
+    color: '#000000', // Black
+    icon: '⚖️',
+    statMods: {
+      speedMultiplier: 1.0,        // Normal speed
+      accelerationMult: 1.0,       // Normal acceleration
+      jumpForce: 1.0,              // Normal jump
+      frictionMult: 1.0,           // Normal friction
+      massMultiplier: 1.0          // Normal mass
+    },
+    personality: 'Shreyas is the balanced adventurer, equally skilled at all things.'
+  },
+  'akshata': {
+    name: 'Akshata',
+    title: 'Fierce & Feisty',
+    description: 'Strong and confident. Rude on the outside, but has a good heart.',
+    color: '#ff1744', // Red
+    icon: '🔥',
+    statMods: {
+      speedMultiplier: 1.05,       // 5% faster
+      accelerationMult: 1.15,      // 15% better acceleration
+      jumpForce: 1.1,              // 10% higher jump
+      frictionMult: 0.98,          // Slightly less friction
+      massMultiplier: 1.05         // Slightly heavier, more stable
+    },
+    personality: 'Akshata is strong-willed and bold. She appears rude but has a caring heart beneath.'
+  },
+  'namal': {
+    name: 'Namal',
+    title: 'Sweet Guardian',
+    description: 'Kind and sweet. Excellent defense and protection.',
+    color: '#ffffff', // White
+    icon: '💝',
+    statMods: {
+      speedMultiplier: 0.95,       // 5% slower
+      accelerationMult: 0.95,      // 5% slower acceleration
+      jumpForce: 0.95,             // 5% lower jump
+      frictionMult: 1.05,          // More friction (stability)
+      massMultiplier: 1.1          // Heavier, more defensive
+    },
+    personality: 'Namal is the sweet, kind-hearted guardian. Protective and caring to everyone.'
+  },
+  'mehwish': {
+    name: 'Mehwish',
+    title: 'Graceful Beauty',
+    description: 'Beautiful and graceful. Moves with elegance and charm.',
+    color: '#ff69b4', // Pink
+    icon: '✨',
+    statMods: {
+      speedMultiplier: 1.08,       // 8% faster
+      accelerationMult: 1.12,      // 12% better acceleration
+      jumpForce: 1.18,             // 18% higher jump
+      frictionMult: 0.92,          // Less friction (smooth movement)
+      massMultiplier: 0.9          // Lightest character, most graceful
+    },
+    personality: 'Mehwish is the most beautiful and graceful of all. She moves with elegant charm.'
+  }
+};
+
+let currentCharacter = characters['soham'];
+
+function switchCharacter(charName) {
+  if(!characters[charName]) {
+    error('Unknown character:', charName);
+    return;
+  }
+  currentCharacter = characters[charName];
+  player.character = charName;
+  player.color = currentCharacter.color;
+  
+  // Apply character stat modifiers to player and physics
+  const baseSpeed = 200;
+  const baseJump = 400;
+  player.speed = baseSpeed * currentCharacter.statMods.speedMultiplier;
+  physics.jumpForce = baseJump * currentCharacter.statMods.jumpForce;
+  physics.gravity = 800 * (1 / currentCharacter.statMods.massMultiplier); // heavier = higher effective gravity
+  
+  log('Character switched to:', charName, '(' + currentCharacter.name + ')');
+  log('  Speed:', player.speed.toFixed(1), 'px/s');
+  log('  Jump Force:', physics.jumpForce.toFixed(1));
+  log('  Description:', currentCharacter.personality);
+  
+  // Update UI if character selector exists
+  const charSelect = document.getElementById('character');
+  if(charSelect) charSelect.value = charName;
+  
+  // Update character info in settings panel
+  updateCharacterInfoDisplay();
+}
+
+// ========== END CHARACTER SYSTEM ==========
 
 // Graphics settings (defaults)
 window.graphicsSettings = {
@@ -37,6 +161,201 @@ const physics = {
   velocityX: 0,
   velocityZ: 0, // forward/back
 };
+
+// ========== VEHICLE SYSTEM ==========
+// Vehicle definitions with physics properties
+const vehicleTypes = {
+  'walking': {
+    name: 'Walking',
+    maxSpeed: 200,
+    acceleration: 600,
+    friction: 0.92,
+    mass: 1,
+    width: 10,
+    height: 10,
+    color: '#ffde59',
+    icon: '🚶'
+  },
+  'scooter': {
+    name: 'Scooter',
+    maxSpeed: 180,
+    acceleration: 400,
+    friction: 0.88,
+    mass: 50,
+    width: 16,
+    height: 12,
+    color: '#ff9500',
+    icon: '🛴',
+    wheelSize: 4
+  },
+  'bike': {
+    name: 'Motorcycle',
+    maxSpeed: 280,
+    acceleration: 700,
+    friction: 0.85,
+    mass: 150,
+    width: 14,
+    height: 20,
+    color: '#ff1744',
+    icon: '🏍️',
+    wheelSize: 5
+  },
+  'car': {
+    name: 'Car',
+    maxSpeed: 250,
+    acceleration: 500,
+    friction: 0.90,
+    mass: 1200,
+    width: 24,
+    height: 32,
+    color: '#4d9de0',
+    icon: '🚗',
+    wheelSize: 6
+  },
+  'autorickshaw': {
+    name: 'Auto-Rickshaw (3-wheeler)',
+    maxSpeed: 160,
+    acceleration: 350,
+    friction: 0.89,
+    mass: 400,
+    width: 20,
+    height: 24,
+    color: '#ffab00',
+    icon: '🛺',
+    wheelSize: 5
+  },
+  'bus': {
+    name: 'Bus',
+    maxSpeed: 140,
+    acceleration: 250,
+    friction: 0.92,
+    mass: 5000,
+    width: 40,
+    height: 60,
+    color: '#ff5722',
+    icon: '🚌',
+    wheelSize: 7
+  },
+  'plane': {
+    name: 'Plane (Airborne)',
+    maxSpeed: 400,
+    acceleration: 900,
+    friction: 0.80,
+    mass: 50000,
+    width: 50,
+    height: 40,
+    color: '#2196f3',
+    icon: '✈️',
+    wheelSize: 0,
+    isAirborne: true
+  }
+};
+
+let currentVehicleType = 'walking';
+let vehicle = null;
+
+function initializeVehicle(type) {
+  const vehicleClass = vehicleTypes[type] || vehicleTypes['walking'];
+  currentVehicleType = type;
+  vehicle = {
+    type: type,
+    ...vehicleClass,
+    velocityX: 0,
+    velocityZ: 0,
+    velocityY: 0,
+    acceleration: 0, // current acceleration
+    steering: 0, // steering angle
+    enginePower: 0, // current engine force
+    braking: 0, // current braking force
+    animationPhase: 0
+  };
+  log('Vehicle initialized:', type, vehicle.name);
+  return vehicle;
+}
+
+function switchVehicle(newType) {
+  if(!vehicleTypes[newType]) {
+    error('Unknown vehicle type:', newType);
+    return;
+  }
+  // Keep position and some momentum
+  const oldVel = vehicle ? {x: vehicle.velocityX, z: vehicle.velocityZ} : {x: 0, z: 0};
+  initializeVehicle(newType);
+  vehicle.velocityX = oldVel.x * 0.5; // reduce momentum on switch
+  vehicle.velocityZ = oldVel.z * 0.5;
+  log('Switched to vehicle:', newType);
+}
+
+function updateVehiclePhysics(dt) {
+  if(!vehicle) initializeVehicle('walking');
+  
+  const v = vehicle;
+  const input = {forward: 0, backward: 0, left: 0, right: 0, brake: 0};
+  
+  // Read input
+  if(keys['w'] || keys['ArrowUp']) input.forward = 1;
+  if(keys['s'] || keys['ArrowDown']) input.backward = 1;
+  if(keys['a'] || keys['ArrowLeft']) input.left = 1;
+  if(keys['d'] || keys['ArrowRight']) input.right = 1;
+  if(keys['Shift']) input.brake = 1;
+  
+  // Engine power calculation
+  const targetAccel = (input.forward - input.backward) * v.acceleration;
+  v.enginePower += (targetAccel - v.enginePower) * Math.min(1, dt * 3);
+  
+  // Braking reduces velocity
+  if(input.brake) {
+    v.velocityX *= Math.pow(0.85, dt);
+    v.velocityZ *= Math.pow(0.85, dt);
+  }
+  
+  // Steering (for vehicles, not walking)
+  if(v.type !== 'walking') {
+    const steeringSpeed = (v.type === 'plane') ? 0.05 : 0.08;
+    v.steering += (input.left - input.right) * steeringSpeed;
+    v.steering = Math.max(-0.4, Math.min(0.4, v.steering)); // clamp steering
+  }
+  
+  // Apply force based on engine power and current velocity
+  const currentSpeed = Math.hypot(v.velocityX, v.velocityZ);
+  const speedFactor = Math.max(0, 1 - currentSpeed / v.maxSpeed);
+  
+  const forceX = Math.sin(v.steering) * v.enginePower * speedFactor * dt;
+  const forceZ = Math.cos(v.steering) * v.enginePower * speedFactor * dt;
+  
+  v.velocityX += forceX;
+  v.velocityZ += forceZ;
+  
+  // Speed limit
+  const speed = Math.hypot(v.velocityX, v.velocityZ);
+  if(speed > v.maxSpeed) {
+    const ratio = v.maxSpeed / speed;
+    v.velocityX *= ratio;
+    v.velocityZ *= ratio;
+  }
+  
+  // Apply friction (air/ground)
+  const frictionFactor = Math.pow(v.friction, dt);
+  v.velocityX *= frictionFactor;
+  v.velocityZ *= frictionFactor;
+  
+  // Gravity for non-airborne vehicles (simplified)
+  if(!v.isAirborne && v.type !== 'plane') {
+    v.velocityY += physics.gravity * dt;
+    if(v.velocityY > physics.maxFallSpeed) v.velocityY = physics.maxFallSpeed;
+  } else if(v.isAirborne || v.type === 'plane') {
+    // Planes can gain/lose altitude
+    if(keys['w'] || keys['ArrowUp']) v.velocityY = -200; // climb
+    if(keys['s'] || keys['ArrowDown']) v.velocityY = 200;  // descend
+    v.velocityY *= 0.98; // drag
+  }
+  
+  // Animation phase (wheels/propeller spinning)
+  const wheelRotSpeed = speed / 50;
+  v.animationPhase += wheelRotSpeed * dt;
+}
+
+// ========== END VEHICLE SYSTEM ==========
 
 // Particles: dust trails and visual effects
 const particles = [];
@@ -233,16 +552,20 @@ let last = performance.now();
 function loop(t){
   const dt = (t-last)/1000; last=t;
   
-  // Apply gravity and update vertical velocity
-  physics.velocityY += physics.gravity * dt;
-  if(physics.velocityY > physics.maxFallSpeed) physics.velocityY = physics.maxFallSpeed;
+  // Apply gravity and update vertical velocity (for player, not vehicle when walking)
+  if(!vehicle || vehicle.type === 'walking') {
+    physics.velocityY += physics.gravity * dt;
+    if(physics.velocityY > physics.maxFallSpeed) physics.velocityY = physics.maxFallSpeed;
+  }
   
   // Update player vertical position
-  player.z += physics.velocityY * dt;
+  player.z += (vehicle && vehicle.type !== 'walking') ? (vehicle.velocityY || 0) * dt : physics.velocityY * dt;
   if(player.z < 0){
     player.z = 0;
-    physics.velocityY = 0;
-    physics.isGrounded = true;
+    if(!vehicle || vehicle.type === 'walking') {
+      physics.velocityY = 0;
+      physics.isGrounded = true;
+    }
     // emit landing particles
     for(let i = 0; i < 5; i++) {
       addParticle(player.x + (Math.random()-0.5)*20, player.y + (Math.random()-0.5)*20, 
@@ -250,43 +573,35 @@ function loop(t){
     }
   }
   
-  // input
-  let dx=0, dy=0;
-  if(keys['w']||keys['ArrowUp']) dy -= 1;
-  if(keys['s']||keys['ArrowDown']) dy += 1;
-  if(keys['a']||keys['ArrowLeft']) dx -= 1;
-  if(keys['d']||keys['ArrowRight']) dx += 1;
-  if(dx||dy){
-    const len = Math.hypot(dx,dy)||1;
-    physics.velocityX = (dx/len) * player.speed;
-    physics.velocityZ = (dy/len) * player.speed;
-  } else {
-    physics.velocityX *= physics.friction;
-    physics.velocityZ *= physics.friction;
-  }
+  // Update vehicle physics (or walking)
+  updateVehiclePhysics(dt);
   
-  // apply speed boost if active
-  if(activePowerups.speedBoost > 0) {
-    physics.velocityX *= 1.3;
-    physics.velocityZ *= 1.3;
-  }
-  
-  // Update player position with collision
-  let nextX = player.x + physics.velocityX * dt;
-  let nextY = player.y + physics.velocityZ * dt;
+  // Move player based on vehicle or walking velocity
+  let nextX = player.x + (vehicle ? vehicle.velocityX : physics.velocityX) * dt;
+  let nextY = player.y + (vehicle ? vehicle.velocityZ : physics.velocityZ) * dt;
   
   // simple collision: don't move if colliding
-  if(!checkCollision(nextX, nextY, player.size)){
+  if(!checkCollision(nextX, nextY, (vehicle ? vehicle.width : player.size)/2)){
     player.x = nextX;
     player.y = nextY;
-    // emit walking dust particles
-    // particle emission depends on particle quality
+    // emit driving/walking dust particles
+    // particle emission depends on particle quality and vehicle speed
     const pq = window.graphicsSettings && window.graphicsSettings.particleQuality ? window.graphicsSettings.particleQuality : 'medium';
     const particleMultiplier = (pq === 'off') ? 0 : (pq === 'low') ? 0.35 : (pq === 'high') ? 1.25 : 1.0;
-    if(Math.random() < 0.3 * particleMultiplier) {
+    const speed = vehicle ? Math.hypot(vehicle.velocityX, vehicle.velocityZ) : Math.hypot(physics.velocityX, physics.velocityZ);
+    if(speed > 20 && Math.random() < 0.3 * particleMultiplier * (speed / 150)) {
       addParticle(player.x + (Math.random()-0.5)*15, player.y + (Math.random()-0.5)*15, 
                   (Math.random()-0.5)*50, -20, 0.4, 'rgba(200,200,200,0.5)');
-      if(Math.random() < 0.5) Audio.playFootstep();
+      if(vehicle && vehicle.type === 'walking' && Math.random() < 0.5) Audio.playFootstep();
+    }
+  } else {
+    // Collision: reduce velocity
+    if(vehicle) {
+      vehicle.velocityX *= 0.3;
+      vehicle.velocityZ *= 0.3;
+    } else {
+      physics.velocityX *= 0.3;
+      physics.velocityZ *= 0.3;
     }
   }
   
@@ -299,7 +614,13 @@ function loop(t){
   // update all systems
   updateParticles(dt);
   updatePowerups(dt);
-  updateAnimation(dt);
+  
+  // Update vehicle animation phase or player animation
+  if(vehicle && vehicle.type !== 'walking') {
+    // vehicle animation already updated in updateVehiclePhysics
+  } else {
+    updateAnimation(dt);
+  }
 
   // headstart countdown
   if(!snake.active){
@@ -310,10 +631,11 @@ function loop(t){
     }
   }
 
-  // snake AI - simple pursuit
+  // snake AI - simple pursuit (targeting player)
   if(snake.active){
-    // ensure snake speed follows player's speed changes
-    snake.speed = player.speed * 1.5;
+    // ensure snake speed follows player's vehicle speed changes
+    const playerSpeed = vehicle ? vehicle.maxSpeed : player.speed;
+    snake.speed = playerSpeed * 1.5;
     const sx = player.x - snake.x;
     const sy = player.y - snake.y;
     const dist = Math.hypot(sx, sy) || 1;
@@ -323,15 +645,21 @@ function loop(t){
     snake.x += nx * snake.speed * dt;
     snake.y += ny * snake.speed * dt;
     // collision check
-    if(dist < (player.size + snake.size) * 0.9 && activePowerups.shield <= 0){
+    const collisionRadius = (vehicle ? vehicle.width : player.size) + snake.size;
+    if(dist < collisionRadius * 0.9 && activePowerups.shield <= 0){
       // caught - simple response: stop the game and show message
       // freeze movement
-      player.speed = 0;
+      if(vehicle) {
+        vehicle.velocityX = 0;
+        vehicle.velocityZ = 0;
+      } else {
+        player.speed = 0;
+      }
       snake.speed = 0;
       Audio.playDanger();
       // show text for a moment by setting headstart negative large
       headstart = -999;
-    } else if(dist < (player.size + snake.size) * 0.9 && activePowerups.shield > 0) {
+    } else if(dist < collisionRadius * 0.9 && activePowerups.shield > 0) {
       // shield active - bounce snake away
       snake.x -= nx * 200 * dt;
       snake.y -= ny * 200 * dt;
@@ -461,25 +789,55 @@ function draw(){
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // draw player
+  // draw player / vehicle
   const p = worldToScreen(player.x, player.y);
   const playerColors = {yellow: '#ffde59', blue: '#4d9de0', green: '#52b788'};
-  ctx.fillStyle = playerColors[player.color] || '#ffde59';
-  ctx.beginPath();
-  ctx.arc(p.x, p.y, Math.max(4, player.size*cam.scale), 0, Math.PI*2);
-  ctx.fill();
+  ctx.fillStyle = (vehicle && vehicle.color) ? vehicle.color : (playerColors[player.color] || '#ffde59');
   
-  // running animation indicator (leaning)
-  const leanAngle = Math.sin(player.animationPhase * Math.PI * 2) * 0.2;
-  ctx.save();
-  ctx.translate(p.x, p.y);
-  ctx.rotate(leanAngle);
-  ctx.strokeStyle = ctx.fillStyle;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.arc(0, 0, Math.max(4, player.size*cam.scale), 0, Math.PI*2);
-  ctx.stroke();
-  ctx.restore();
+  if(vehicle && vehicle.type !== 'walking') {
+    // Draw vehicle as rectangle
+    const w = vehicle.width * cam.scale;
+    const h = vehicle.height * cam.scale;
+    const rotation = Math.atan2(vehicle.velocityZ, vehicle.velocityX);
+    
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(rotation);
+    ctx.fillRect(-w/2, -h/2, w, h);
+    
+    // Draw wheels/highlights
+    if(vehicle.wheelSize > 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      const wheelR = vehicle.wheelSize * cam.scale;
+      ctx.beginPath(); ctx.arc(-w/3, -h/2.5, wheelR, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(w/3, -h/2.5, wheelR, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(-w/3, h/2.5, wheelR, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(w/3, h/2.5, wheelR, 0, Math.PI*2); ctx.fill();
+    }
+    
+    // Draw direction indicator / windows
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillRect(-w/4, -h/3, w/2, h/6);
+    
+    ctx.restore();
+  } else {
+    // Draw player as circle
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, Math.max(4, player.size*cam.scale), 0, Math.PI*2);
+    ctx.fill();
+    
+    // running animation indicator (leaning)
+    const leanAngle = Math.sin(player.animationPhase * Math.PI * 2) * 0.2;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(leanAngle);
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, Math.max(4, player.size*cam.scale), 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
 
   // draw snake
   if(snakeSpawned){
@@ -523,14 +881,25 @@ function draw(){
   ctx.fillText('Score: ' + Math.floor(score), 12, canvas.height - 20);
   ctx.fillText('Height: ' + Math.floor(player.z), 12, canvas.height - 40);
   
+  // Show current character and vehicle
+  ctx.font = '14px sans-serif';
+  if(currentCharacter) {
+    ctx.fillStyle = currentCharacter.color;
+    ctx.fillText('Character: ' + currentCharacter.icon + ' ' + currentCharacter.name + ' (' + currentCharacter.title + ')', 12, canvas.height - 60);
+  }
+  if(vehicle) {
+    ctx.fillStyle = '#fff';
+    ctx.fillText('Vehicle: ' + vehicle.icon + ' ' + vehicle.name + ' | Speed: ' + Math.floor(Math.hypot(vehicle.velocityX, vehicle.velocityZ)) + ' px/s', 12, canvas.height - 100);
+  }
+  
   // HUD: active powerups
   if(activePowerups.speedBoost > 0) {
     ctx.fillStyle = '#ffaa00';
-    ctx.fillText('SPEED BOOST! ' + Math.ceil(activePowerups.speedBoost) + 's', 12, canvas.height - 60);
+    ctx.fillText('SPEED BOOST! ' + Math.ceil(activePowerups.speedBoost) + 's', 12, canvas.height - 80);
   }
   if(activePowerups.shield > 0) {
     ctx.fillStyle = '#00aaff';
-    ctx.fillText('SHIELD! ' + Math.ceil(activePowerups.shield) + 's', 12, canvas.height - 80);
+    ctx.fillText('SHIELD! ' + Math.ceil(activePowerups.shield) + 's', 12, canvas.height - 120);
   }
 
   ctx.restore();
@@ -543,6 +912,8 @@ let is3D = false;
 const threeToggle = document.getElementById('mode3d');
 const graphicsSelect = document.getElementById('graphics');
 const characterSelect = document.getElementById('character');
+const vehicleSelect = document.getElementById('vehicle');
+
 if(threeToggle) threeToggle.addEventListener('change', ()=>{
   is3D = threeToggle.checked;
   window.is3D = is3D;
@@ -552,7 +923,19 @@ if(threeToggle) threeToggle.addEventListener('change', ()=>{
   if(!is3D && window.stop3D) window.stop3D();
 });
 if(graphicsSelect) graphicsSelect.addEventListener('change', ()=>{ if(window.setGraphics) window.setGraphics(graphicsSelect.value); });
-if(characterSelect) characterSelect.addEventListener('change', ()=>{ player.color = characterSelect.value; window.playerColor = player.color; });
+if(characterSelect) characterSelect.addEventListener('change', (e)=>{
+  log('Character change requested:', e.target.value);
+  switchCharacter(e.target.value);
+});
+if(vehicleSelect) vehicleSelect.addEventListener('change', (e)=>{
+  log('Vehicle change requested:', e.target.value);
+  switchVehicle(e.target.value);
+});
+
+// Initialize vehicle on startup
+initializeVehicle('walking');
+switchCharacter('soham');
+log('Initial vehicle and character initialized');
 
 // Settings panel bindings
 const settingsToggle = document.getElementById('settingsToggle');
@@ -583,6 +966,22 @@ function applyGraphicsSettings(){
   window.graphicsSettings = Object.assign(window.graphicsSettings || {}, s);
 }
 
+// Update character info display in settings panel
+function updateCharacterInfoDisplay(){
+  if(!currentCharacter) return;
+  const charNameEl = document.getElementById('charName');
+  const charDescEl = document.getElementById('charDesc');
+  if(charNameEl) {
+    charNameEl.textContent = currentCharacter.icon + ' ' + currentCharacter.name + ' (' + currentCharacter.title + ')';
+    charNameEl.style.color = currentCharacter.color;
+  }
+  if(charDescEl) {
+    charDescEl.innerHTML = '<strong>Personality:</strong> ' + currentCharacter.personality + 
+                          '<br><strong>Speed:</strong> ' + (currentCharacter.statMods.speedMultiplier * 100).toFixed(0) + '% | ' +
+                          '<strong>Jump:</strong> ' + (currentCharacter.statMods.jumpForce * 100).toFixed(0) + '% | ' +
+                          '<strong>Mass:</strong> ' + (currentCharacter.statMods.massMultiplier * 100).toFixed(0) + '%';
+  }
+}
 if(settingsToggle) settingsToggle.addEventListener('click', ()=>{ if(settingsPanel) settingsPanel.classList.toggle('hidden'); });
 if(settingsClose) settingsClose.addEventListener('click', ()=>{ if(settingsPanel) settingsPanel.classList.add('hidden'); });
 if(shadowSelect) shadowSelect.addEventListener('change', (e)=>{ window.graphicsSettings.shadowQuality = e.target.value; applyGraphicsSettings(); });
@@ -659,6 +1058,16 @@ window.playerColor = player.color || 'yellow';
 // expose snake and headstart for the 3D renderer / debugging
 window.snake = snake;
 window.headstart = headstart;
+// expose vehicle system
+window.vehicle = vehicle;
+window.currentVehicleType = currentVehicleType;
+window.switchVehicle = switchVehicle;
+window.vehicleTypes = vehicleTypes;
+// expose character system
+window.currentCharacter = currentCharacter;
+window.switchCharacter = switchCharacter;
+window.characters = characters;
+log('All game globals exposed to window scope');
 
 // ensure draw skips when 3D is active
 const _origDraw = draw;

@@ -25,14 +25,35 @@
     </select>
     <label style="margin-left:8px">Character</label>
     <select id="character" style="margin-left:4px">
-      <option value="yellow">Explorer (Yellow)</option>
-      <option value="blue">Scout (Blue)</option>
-      <option value="green">Ranger (Green)</option>
+      <option value="soham">⚡ Soham (Athlete) - Blue</option>
+      <option value="shreyas">⚖️ Shreyas (All-Rounder) - Black</option>
+      <option value="akshata">🔥 Akshata (Fierce) - Red</option>
+      <option value="namal">💝 Namal (Sweet) - White</option>
+      <option value="mehwish">✨ Mehwish (Graceful Beauty) - Pink</option>
+    </select>
+    <label style="margin-left:8px">Vehicle</label>
+    <select id="vehicle" style="margin-left:4px">
+      <option value="walking">Walking 🚶</option>
+      <option value="scooter">Scooter 🛴</option>
+      <option value="bike">Bike 🏍️</option>
+      <option value="car">Car 🚗</option>
+      <option value="autorickshaw">Auto 🛺</option>
+      <option value="bus">Bus 🚌</option>
+      <option value="plane">Plane ✈️</option>
     </select>
     <button id="settingsToggle" title="Open settings" style="margin-left:12px">Settings ⚙️</button>
   <!-- Multiplayer removed for static deployment -->
   </div>
   <div id="settingsPanel" class="hidden">
+    <h3>⚙️ Game Settings & Characters</h3>
+    <div class="setting-row">
+      <label>Current Character Info</label>
+      <div id="characterInfo" style="background:rgba(255,255,255,0.1);padding:8px;border-radius:4px;margin:4px 0;font-size:12px">
+        <div id="charName" style="font-weight:bold;margin-bottom:4px">Character: Loading...</div>
+        <div id="charDesc" style="font-size:11px;line-height:1.4">Select a character to see details</div>
+      </div>
+    </div>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,0.2);margin:6px 0">
     <h3>Graphics Settings</h3>
     <div class="setting-row">
       <label>Presets</label>

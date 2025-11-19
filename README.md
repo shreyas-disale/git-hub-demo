@@ -1,32 +1,45 @@
 ﻿# git-hub-demo
 
-An **open-world roaming game** with physics, power-ups, particle effects, and biome-based terrain. Built with vanilla **JavaScript/HTML5 Canvas** (2D) and **Three.js** (3D mode). Features include gravity-based jumping, a pursuing snake enemy, collectible power-ups, and dynamic terrain biomes.
+An **open-world roaming game** with **vehicles, physics, power-ups**, and particle effects. Built with vanilla **JavaScript/HTML5 Canvas** (2D) and **Three.js** (3D mode). Features include gravity-based jumping, a pursuing snake enemy, collectible power-ups, dynamic terrain biomes, and a full **vehicle system** with scooters, bikes, cars, auto-rickshaws, buses, and planes.
 
 ## 🎮 Features
 
 - **Open-World Roaming**: Infinite procedurally-generated terrain with three biome types (grass, sand, snow)
-- **Physics System**: Gravity, jumping, velocity-based movement with collision detection
-- **Snake Chase**: AI pursuer with 1.5× player speed and 5-second head start; defeated if you activate the shield power-up
+- **Advanced Physics System**: Gravity, velocity-based movement, steering, braking, collision detection, and vehicle-specific physics
+- **Vehicle System** (NEW): Drive 7 different vehicles:
+  - 🚶 **Walking** – Normal player movement (200 px/s max)
+  - 🛴 **Scooter** – Light 2-wheeler (180 px/s max)
+  - 🏍️ **Motorcycle** – Fast sports bike (280 px/s max)
+  - 🚗 **Car** – 4-wheeler sedan (250 px/s max)
+  - 🛺 **Auto-Rickshaw** – Traditional Indian 3-wheeler (160 px/s max)
+  - 🚌 **Bus** – Heavy public transport (140 px/s max)
+  - ✈️ **Plane** – Airborne craft with altitude control (400 px/s max)
+- **Snake Chase**: AI pursuer with dynamic speed based on your vehicle
 - **Power-Ups**: Speed boost, shield, and health items spawn randomly across the map
-- **Particle Effects**: Dust trails while walking, landing particles, pickup explosions, and danger indicators
-- **Running Animation**: Synchronized arm/leg swinging based on movement velocity
-- **Audio Synthesis**: Procedural footstep, jump, pickup, and danger sounds (no external audio files)
+- **Particle Effects**: Dust trails while driving, landing particles, pickup explosions
+- **Running/Driving Animation**: Synchronized animation based on movement velocity and vehicle type
+- **Audio Synthesis**: Procedural sound effects (no external audio files required)
 - **Multiple Perspectives**: Top-down, follow cam, and zoomed-out overview modes
 - **3D Renderer**: Toggle between 2D canvas and 3D Three.js rendering
 - **Graphics Quality**: Low, medium, and high quality settings
-- **Character Skins**: Three color variants (Explorer/Yellow, Scout/Blue, Ranger/Green)
+- **Character System** (NEW): 5 unique characters with personality, appearance, and stat modifiers:
+  - ⚡ **Soham** (Athlete, Blue) – Fast and agile (+15% speed, +25% jump)
+  - ⚖️ **Shreyas** (All-Rounder, Black) – Perfectly balanced in all aspects
+  - 🔥 **Akshata** (Fierce & Feisty, Red) – Strong and confident (+15% acceleration, +10% jump)
+  - 💝 **Namal** (Sweet Guardian, White) – Kind and defensive (-5% speed, +10% mass)
+  - ✨ **Mehwish** (Graceful Beauty, Pink) – Most beautiful and graceful (+8% speed, +18% jump, lightest)
 - **Score Tracking**: Distance-based scoring system
-- **Multi-Language Example**: HTML/JS frontend, Python map generator and server, Java map generator
+- **Comprehensive Debugging**: Console logs and error handling for troubleshooting
 
 ## 📁 Project Structure
 
 ```
 .
 ├── game/
-│   ├── index.html          # Main game page (Canvas + Three.js)
-│   ├── main.js             # Core game loop, physics, AI, particle system
+│   ├── index.html          # Main game page (Canvas + Three.js + Vehicle UI)
+│   ├── main.js             # Core game loop, physics, vehicle system, AI, particles
 │   ├── main3d.js           # Three.js 3D renderer
-│   ├── audio.js            # Web Audio API synthesis (NEW)
+│   ├── audio.js            # Web Audio API synthesis
 │   ├── style.css           # HUD and layout styling
 │   └── map.json            # Static tile map (generated)
 ├── tools/
@@ -35,6 +48,7 @@ An **open-world roaming game** with physics, power-ups, particle effects, and bi
 ├── java/
 │   └── MapGenerator.java    # Java map generator (multi-language example)
 ├── FEATURES.md             # Detailed feature documentation
+├── QUICKSTART.md           # Quick reference guide
 ├── requirements.txt        # Python dependencies
 └── README.md               # This file
 ```
@@ -43,7 +57,8 @@ An **open-world roaming game** with physics, power-ups, particle effects, and bi
 
 ### Prerequisites
 - Python 3.7+ (for local server)
-- Modern browser (Firefox, Chrome, Edge)
+- Modern browser (Chrome, Firefox, Edge)
+- **Internet access** (for Three.js CDN) or local Three.js file
 
 ### Local Setup
 
@@ -56,42 +71,81 @@ An **open-world roaming game** with physics, power-ups, particle effects, and bi
    ```powershell
    python .\tools\server.py 8000
    ```
+   
+   **Note:** If port 8000 is already in use, try:
+   ```powershell
+   python .\tools\server.py 8001
+   ```
 
 3. **Open in your browser**:
    ```
-   http://localhost:8000
+   http://localhost:8000  (or :8001 if 8000 is in use)
    ```
 
 ### Controls
 
-| Key                | Action                 |
-|--------------------|------------------------|
-| **W / ↑**          | Move up                |
-| **A / ←**          | Move left              |
-| **S / ↓**          | Move down              |
-| **D / →**          | Move right             |
-| **Space**          | Jump                   |
-| **Perspective**    | Switch camera mode     |
-| **3D Mode**        | Toggle 3D renderer     |
-| **Graphics**       | Quality setting (Low/Med/High) |
-| **Character**      | Choose color skin      |
+| Key                | Action                          |
+|--------------------|---------------------------------|
+| **W / ↑**          | Move forward / Accelerate       |
+| **A / ←**          | Turn left / Steer left          |
+| **S / ↓**          | Move backward / Reverse         |
+| **D / →**          | Turn right / Steer right        |
+| **Shift**          | Brake (for vehicles)            |
+| **Space**          | Jump (walking only)             |
+| **Vehicle Menu**   | Select driving mode             |
+| **Perspective**    | Switch camera mode              |
+| **3D Mode**        | Toggle 3D renderer              |
+| **Graphics**       | Quality setting (Low/Med/High)  |
+| **Character**      | Choose color skin               |
+| **Settings ⚙️**   | Open graphics/audio settings    |
 
-## 🎯 Gameplay
+## � Gameplay
 
 ### Objective
-Survive as long as possible while avoiding the snake pursuer. Collect power-ups to gain temporary advantages.
+Survive as long as possible while avoiding the snake pursuer. Collect power-ups to gain temporary advantages. Drive different vehicles and master their unique physics.
 
 ### Game Mechanics
 
-- **Movement**: Use WASD to move freely; collide with water/trees to block movement
-- **Jumping**: Press Space to jump; gravity pulls you down; landing emits particles
-- **Snake**: After 5-second head start, a red snake chases you at 1.5× your speed
-- **Power-Ups**: Run over glowing boxes to activate:
-  - 🟠 **Speed Boost** (orange): 30% faster movement for 12 seconds
-  - 🔵 **Shield** (cyan): Protect against snake collision for 15 seconds
-  - 🟢 **Health** (green): Restore game state if caught
-- **Score**: Increments by distance traveled
-- **Game Over**: Touched by snake without shield; message displayed
+#### Movement & Vehicles
+- **Walking**: Basic movement, can jump
+- **Driving**: Use W/A/S/D for acceleration, steering, and braking
+  - Each vehicle has unique max speed, acceleration, and steering response
+  - Friction varies by vehicle type (bikes are twitchier, buses are heavier)
+  - Steering angle is shown visually in the direction the vehicle faces
+- **Planes**: Can gain/lose altitude with W/S keys while airborne
+
+#### Snake Mechanic
+- After 5-second head start, a red snake chases you at 1.5× your vehicle's max speed
+- The snake's speed scales with your current vehicle
+- Protect yourself with shield power-ups or switch to a slower vehicle to outmaneuver
+- If caught without shield, game over
+
+#### Power-Ups
+- 🟠 **Speed Boost** (orange): 30% velocity multiplier for 12 seconds
+- 🔵 **Shield** (cyan): Protect against snake collision for 15 seconds
+- 🟢 **Health** (green): Restore health status
+
+#### Score
+- Increments by distance traveled (normalized by 10)
+- Higher vehicle speeds = higher score per second
+
+#### Character Selection
+Each character has unique stats and personality:
+
+| Character | Color | Title | Trait | Speed | Jump | Mass |
+|-----------|-------|-------|-------|-------|------|------|
+| **Soham** ⚡ | Blue | Athlete | Fast & agile, built for speed | +15% | +25% | -15% |
+| **Shreyas** ⚖️ | Black | All-Rounder | Perfectly balanced | Normal | Normal | Normal |
+| **Akshata** 🔥 | Red | Fierce & Feisty | Strong but rude | +5% | +10% | +5% |
+| **Namal** 💝 | White | Sweet Guardian | Kind & defensive | -5% | -5% | +10% |
+| **Mehwish** ✨ | Pink | Graceful Beauty | Most beautiful, graceful | +8% | +18% | -10% |
+
+**Character Personalities:**
+- **Soham**: Athletic and determined, excels at speed and agility
+- **Shreyas**: Balanced adventurer, equally skilled at all things
+- **Akshata**: Strong-willed and bold; appears rude but has a caring heart
+- **Namal**: Sweet, kind-hearted guardian; protective and caring to everyone
+- **Mehwish**: Most beautiful and graceful; moves with elegant charm
 
 ### Biomes
 
@@ -184,13 +238,99 @@ const physics = {
 
 ## 🐛 Troubleshooting
 
+### Browser Security & Firewall Issues
+
+#### 🔴 Microsoft Edge (SmartScreen)
+When running locally, Edge may block the page due to SmartScreen filter:
+
+**Solution:**
+1. Click **"Don't send"** or **"Provide feedback"** button
+2. Click **"Show more"** → **"Allow"** to proceed
+3. Alternatively, bypass by:
+   - Opening **Settings** → **Privacy, search, and services**
+   - Disable **Microsoft Defender SmartScreen** for local localhost connections
+   - Or use **InPrivate mode** which may skip some checks
+
+#### 🔵 Firefox
+Firefox is generally more permissive. If you see warnings:
+
+**Solution:**
+1. **Firewall Access**: Windows Firewall may block Python server
+   - Press `Win+R`, type `wf.msc` (Windows Defender Firewall with Advanced Security)
+   - Click **Inbound Rules** → **New Rule...**
+   - Select **Port** → **TCP** → **Specific local ports: 8000** (or 8001)
+   - Click **Allow** → **Finish**
+   
+2. **Content Restrictions**: If localhost is blocked
+   - Go to `about:config` in address bar
+   - Search `dom.disable_beforeunload` and toggle if needed
+   - Most localhost access is allowed by default in Firefox
+
+#### 🌐 Chrome/Chromium
+Generally permissive for localhost:
+
+**If blocked (rare):**
+1. Check Windows Firewall (see Firefox solution above)
+2. Try incognito mode (`Ctrl+Shift+N`)
+3. Clear cache: `Ctrl+Shift+Delete`
+
+### Port Already in Use
+
+**Error**: `OSError: [WinError 10048] Only one usage of each socket address...`
+
+**Solution:**
+```powershell
+# Option 1: Use a different port
+python .\tools\server.py 8001
+
+# Option 2: Find and kill process using port 8000
+netstat -ano | findstr :8000
+taskkill /PID <PID> /F
+
+# Option 3: Allow Python through Windows Firewall
+# (See browser security section above)
+```
+
+### Common Issues
+
 | Issue | Solution |
 |-------|----------|
-| Game won't load | Check Python server is running; use exact URL `http://localhost:8000` |
-| Sounds not working | Browser may block audio; check console for Web Audio errors |
-| 3D mode crashes | Update browser; disable high graphics if low-end device |
-| Snake not appearing | Wait 5 seconds for head start to expire |
-| Movement feels sluggish | Try switching to low graphics or 2D mode |
+| Game won't load | Check Python server is running; use exact URL `http://localhost:8000` (or :8001); disable SmartScreen in Edge |
+| "Localhost refused to connect" | Port in use; try `python .\tools\server.py 8001` |
+| Sounds not working | Browser may block audio; check dev console (F12) for Web Audio errors; click page to activate audio context |
+| 3D mode crashes | Update browser to latest version; disable high graphics if low-end device; check console for Three.js errors |
+| Snake not appearing | Wait 5 seconds for head start to expire; check snake spawn at 600px away |
+| Movement feels sluggish | Try switching to low graphics or 2D mode; check FPS counter (top-left) |
+| Vehicle not changing | Ensure JavaScript console shows no errors; refresh page after vehicle select |
+| Settings panel won't close | Click "Close" button or click ⚙️ again to toggle |
+
+### Debugging
+
+Open **Developer Console** in your browser:
+- **Chrome/Edge**: Press `F12` or `Ctrl+Shift+I`
+- **Firefox**: Press `F12` or `Ctrl+Shift+K`
+- **Safari**: Enable in Preferences → Advanced → Show Develop menu
+
+**Look for**:
+- `[GAME]` prefixed logs (game initialization, vehicle changes, physics updates)
+- `[GAME ERROR]` for runtime issues
+- `Uncaught` errors in red text (JavaScript failures)
+- Network errors in **Network** tab (if Three.js CDN fails)
+
+**Example Good Console Output**:
+```
+[GAME] Game initialization started
+[GAME] Canvas and context ready; DPR= 1.5
+[GAME] All game globals exposed to window scope
+[GAME] Game initialization started
+[GAME] Initial vehicle initialized
+```
+
+**If you see errors**, please note them and:
+1. Ensure all files are in `game/` folder
+2. Check that `map.json` exists
+3. Verify Three.js CDN is accessible (check Network tab)
+4. Try different browser or port
 
 ## 📚 Multi-Language Code Examples
 
