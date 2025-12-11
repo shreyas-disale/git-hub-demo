@@ -1,4 +1,4 @@
-// Simple top-down roaming demo with multiple perspectives, infinite procedural map outside initial map,
+      // Simple top-down roaming demo with multiple perspectives, infinite procedural map outside initial map,
 // and a pursuing snake that chases the player after a 5s head start.
 // ENHANCED WITH: Vehicle system, advanced physics, debugging, and Indian street features
 
@@ -704,8 +704,8 @@ function loop(t){
 
 function draw(){
   ctx.save();
-  ctx.scale(DPR, DPR);
   ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.scale(DPR, DPR);
 
   // Simple 2D lighting: darken scene and punch a soft circular light around player
   const lightRadius = Math.max(80, 120 * cam.scale);
