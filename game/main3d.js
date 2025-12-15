@@ -169,12 +169,12 @@
     playerMesh.add(rLeg);
     // attach a simple shirt color (torso material)
     playerMesh.userData.parts = {torso: torso, head: head, lArm: lArm, rArm: rArm, lLeg: lLeg, rLeg: rLeg};
-    scene.add(playerMesh);
+    scene.add(playerMesh); 
   }
-
+  
   function createSnakeMesh(){
     if(snakeMesh){ scene.remove(snakeMesh); snakeMesh=null; }
-    const geom = new THREE.SphereGeometry(8, 12, 12);
+    const geom = new THREE.SphereGeometry(8, 12, 12);        
     const mat = new THREE.MeshStandardMaterial({color: 0xff4d4d, metalness: 0.3, roughness: 0.7});
     snakeMesh = new THREE.Mesh(geom, mat);
     snakeMesh.castShadow = true;

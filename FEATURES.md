@@ -1,4 +1,4 @@
-# Game Features - Complete Enhancement Update
+   # Game Features - Complete Enhancement Update
 
 ## New Features Added
 
@@ -48,7 +48,7 @@
 
 ### 6. **Enhanced Physics & Collision**
 - Landing particles emit when grounded
-- Speed boost multiplies velocity when active
+ - Speed boost multiplies velocity when active
 - Shield bounces snake away when collision occurs
 - Improved visual feedback during jumps and landings
 

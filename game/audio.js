@@ -4,7 +4,7 @@ let audioContext = null;
 try {
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
 } catch(e) {
-  console.warn('Audio context unavailable:', e);
+  console.warn('Audio context unavailable:', e);   
 }
 
 const Audio = {
