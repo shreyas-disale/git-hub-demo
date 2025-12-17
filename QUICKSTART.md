@@ -1,4 +1,4 @@
-# 🎮 Quick Start Guide - Open World Roam Game
+  # 🎮 Quick Start Guide - Open World Roam Game
 
 ## Play Instantly
 
@@ -16,7 +16,7 @@ http://localhost:8000
 
 **That's it!** The game loads immediately. No build step, no compilation.
 
-### Option 2: Online Play (Instant HTTPS Link)
+### Option 2: Online Play (Instant HTTps
 
 1. Locate: `git-hub-demo-game.zip` (in your project root)
 2. Visit: https://app.netlify.com/drop
@@ -177,6 +177,7 @@ Three procedural terrain types:
 - Browser may need permission
 - Check browser console (F12) for errors
 - Audio requires HTTPS or localhost (not file://)
+- Some browsers start the AudioContext in a suspended state; click or press a key on the page to enable audio
 
 ### "Movement is choppy"
 - Switch to **Low graphics**

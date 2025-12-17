@@ -2,8 +2,9 @@
 // and a pursuing snake that chases the player after a 5s head start.
 // ENHANCED WITH: Vehicle system, advanced physics, debugging, and Indian street features
 
+"use strict";
 // Debugging and error logging
-const DEBUG = true;
+const DEBUG = false; // set to true for verbose logs during development
 function log(...args) { if(DEBUG) console.log('[GAME]', ...args); }
 function error(...args) { console.error('[GAME ERROR]', ...args); }
 log('Game initialization started');
@@ -528,8 +529,10 @@ function updateCameraForPerspective(){
 updateCameraForPerspective();
 
 function worldToScreen(wx,wy){
-  const sx = (wx - cam.x) * cam.scale + canvas.width/2;
-  const sy = (wy - cam.y) * cam.scale + canvas.height/2;
+  const viewW = canvas.width / DPR;
+  const viewH = canvas.height / DPR;
+  const sx = (wx - cam.x) * cam.scale + viewW/2;
+  const sy = (wy - cam.y) * cam.scale + viewH/2;
   return {x:sx,y:sy};
 }
 
@@ -871,35 +874,35 @@ function draw(){
   // if player caught
   if(headstart < -10){
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(canvas.width/2 - 160, canvas.height/2 - 40, 320, 80);
+    ctx.fillRect(viewW/2 - 160, viewH/2 - 40, 320, 80);
     ctx.fillStyle = '#fff'; ctx.font = '24px sans-serif';
-    ctx.fillText('You were caught by the snake!', canvas.width/2 - 150, canvas.height/2);
+    ctx.fillText('You were caught by the snake!', viewW/2 - 150, viewH/2);
   }
 
   // HUD: score and status
   ctx.fillStyle = '#fff'; ctx.font = '16px sans-serif';
-  ctx.fillText('Score: ' + Math.floor(score), 12, canvas.height - 20);
-  ctx.fillText('Height: ' + Math.floor(player.z), 12, canvas.height - 40);
+  ctx.fillText('Score: ' + Math.floor(score), 12, viewH - 20);
+  ctx.fillText('Height: ' + Math.floor(player.z), 12, viewH - 40);
   
   // Show current character and vehicle
   ctx.font = '14px sans-serif';
   if(currentCharacter) {
     ctx.fillStyle = currentCharacter.color;
-    ctx.fillText('Character: ' + currentCharacter.icon + ' ' + currentCharacter.name + ' (' + currentCharacter.title + ')', 12, canvas.height - 60);
+    ctx.fillText('Character: ' + currentCharacter.icon + ' ' + currentCharacter.name + ' (' + currentCharacter.title + ')', 12, viewH - 60);
   }
   if(vehicle) {
     ctx.fillStyle = '#fff';
-    ctx.fillText('Vehicle: ' + vehicle.icon + ' ' + vehicle.name + ' | Speed: ' + Math.floor(Math.hypot(vehicle.velocityX, vehicle.velocityZ)) + ' px/s', 12, canvas.height - 100);
+    ctx.fillText('Vehicle: ' + vehicle.icon + ' ' + vehicle.name + ' | Speed: ' + Math.floor(Math.hypot(vehicle.velocityX, vehicle.velocityZ)) + ' px/s', 12, viewH - 100);
   }
   
   // HUD: active powerups
   if(activePowerups.speedBoost > 0) {
     ctx.fillStyle = '#ffaa00';
-    ctx.fillText('SPEED BOOST! ' + Math.ceil(activePowerups.speedBoost) + 's', 12, canvas.height - 80);
+    ctx.fillText('SPEED BOOST! ' + Math.ceil(activePowerups.speedBoost) + 's', 12, viewH - 80);
   }
   if(activePowerups.shield > 0) {
     ctx.fillStyle = '#00aaff';
-    ctx.fillText('SHIELD! ' + Math.ceil(activePowerups.shield) + 's', 12, canvas.height - 120);
+    ctx.fillText('SHIELD! ' + Math.ceil(activePowerups.shield) + 's', 12, viewH - 120);
   }
 
   ctx.restore();
@@ -908,19 +911,18 @@ function draw(){
 loadMap();
 
 // 3D mode support: expose some globals for the 3D renderer and add a toggle
-let is3D = false;
 const threeToggle = document.getElementById('mode3d');
 const graphicsSelect = document.getElementById('graphics');
 const characterSelect = document.getElementById('character');
 const vehicleSelect = document.getElementById('vehicle');
 
 if(threeToggle) threeToggle.addEventListener('change', ()=>{
-  is3D = threeToggle.checked;
-  window.is3D = is3D;
+  const on = threeToggle.checked;
+  if(window.Game) window.Game.is3D = on;
   const sceneDiv = document.getElementById('scene3d');
-  if(sceneDiv) sceneDiv.style.display = is3D ? 'block' : 'none';
-  if(is3D && window.start3D) window.start3D();
-  if(!is3D && window.stop3D) window.stop3D();
+  if(sceneDiv) sceneDiv.style.display = on ? 'block' : 'none';
+  if(on && window.start3D) window.start3D();
+  if(!on && window.stop3D) window.stop3D();
 });
 if(graphicsSelect) graphicsSelect.addEventListener('change', ()=>{ if(window.setGraphics) window.setGraphics(graphicsSelect.value); });
 if(characterSelect) characterSelect.addEventListener('change', (e)=>{
@@ -1044,34 +1046,48 @@ let fps = 0, frames = 0, fpsLast = performance.now();
 const fpsEl = document.getElementById('fpsCounter');
 
 // expose useful items for the 3D renderer
-window.player = player;
-window.getTileAt = getTileAt;
-window.mapData = map;
-window.cam = cam;
-window.powerups = powerups;
-window.particles = particles;
-window.activePowerups = activePowerups;
+// Create a single `Game` namespace object (keeps globals tidy and backwards compatible)
+window.Game = window.Game || {};
+Object.assign(window.Game, {
+  player,
+  getTileAt,
+  cam,
+  powerups,
+  particles,
+  activePowerups,
+  vehicle,
+  currentVehicleType,
+  switchVehicle,
+  vehicleTypes,
+  currentCharacter,
+  switchCharacter,
+  characters,
+  // runtime toggles
+  is3D: false,
+});
+
+// Dynamic getters for items that change during runtime
+Object.defineProperty(window.Game, 'mapData', { get: ()=> map });
+Object.defineProperty(window.Game, 'playerColor', { get: ()=> player.color || 'yellow' });
+Object.defineProperty(window.Game, 'snake', { get: ()=> snake });
+Object.defineProperty(window.Game, 'headstart', { get: ()=> headstart });
+
+// Backwards compatibility: shallow expose commonly used names (deprecated)
+window.player = window.Game.player;
+window.getTileAt = window.Game.getTileAt;
+window.mapData = window.Game.mapData;
+window.cam = window.Game.cam;
+
 window.setGraphics = (q)=>{ // default hook
   if(q === 'low') DPR = 1; else if(q === 'medium') DPR = window.devicePixelRatio || 1; else DPR = Math.min(2, window.devicePixelRatio || 1.5);
+  resize(); // re-apply canvas sizing when DPR changes
 };
-window.playerColor = player.color || 'yellow';
-// expose snake and headstart for the 3D renderer / debugging
-window.snake = snake;
-window.headstart = headstart;
-// expose vehicle system
-window.vehicle = vehicle;
-window.currentVehicleType = currentVehicleType;
-window.switchVehicle = switchVehicle;
-window.vehicleTypes = vehicleTypes;
-// expose character system
-window.currentCharacter = currentCharacter;
-window.switchCharacter = switchCharacter;
-window.characters = characters;
-log('All game globals exposed to window scope');
 
-// ensure draw skips when 3D is active
+log('Game namespace initialized and globals set (use window.Game)');
+
+// ensure draw skips when 3D is active (use Game.is3D)
 const _origDraw = draw;
 function draw(){
-  if(window.is3D) return; // 2D renderer paused when in 3D mode
+  if(window.Game && window.Game.is3D) return; // 2D renderer paused when in 3D mode
   _origDraw();
 }
