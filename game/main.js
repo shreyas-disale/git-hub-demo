@@ -358,20 +358,38 @@ function updateVehiclePhysics(dt) {
 
 // ========== END VEHICLE SYSTEM ==========
 
-// Particles: dust trails and visual effects
+// Particles: dust trails and visual effects (pooled for performance)
 const particles = [];
+const particlePool = [];
+const MAX_PARTICLES = 800;
 function addParticle(x, y, vx, vy, life, color) {
-  particles.push({x, y, vx, vy, life, maxLife: life, color});
+  if(particles.length >= MAX_PARTICLES) return; // safety cap
+  let p;
+  if(particlePool.length > 0) {
+    p = particlePool.pop();
+    p.x = x; p.y = y; p.vx = vx; p.vy = vy; p.life = life; p.maxLife = life; p.color = color;
+  } else {
+    p = {x, y, vx, vy, life, maxLife: life, color};
+  }
+  particles.push(p);
 }
 
 function updateParticles(dt) {
+  // iterate backward and recycle expired particles to pool (swap-pop for efficiency)
   for(let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
     p.x += p.vx * dt;
     p.y += p.vy * dt;
     p.vy += 200 * dt; // gravity on particles
     p.life -= dt;
-    if(p.life <= 0) particles.splice(i, 1);
+    if(p.life <= 0) {
+      // recycle
+      particlePool.push(p);
+      // swap with end then pop
+      const last = particles[particles.length-1];
+      particles[i] = last;
+      particles.pop();
+    }
   }
 }
 
@@ -552,7 +570,17 @@ function spawnSnake(){
 }
 
 let last = performance.now();
+let _frameToggle = false; // used for simple frame skipping
 function loop(t){
+  // Throttle when tab is hidden to save CPU (keep timers sane by resetting `last`)
+  if(document.hidden){ last = t; setTimeout(()=>requestAnimationFrame(loop), 200); return; }
+
+  // Basic targetFPS enforcement (skipping frames when in low quality)
+  if(window.graphicsSettings && window.graphicsSettings.targetFPS && window.graphicsSettings.targetFPS < 60){
+    _frameToggle = !_frameToggle;
+    if(window.graphicsSettings.targetFPS === 30 && !_frameToggle){ last = t; requestAnimationFrame(loop); return; }
+  }
+
   const dt = (t-last)/1000; last=t;
   
   // Apply gravity and update vertical velocity (for player, not vehicle when walking)
@@ -569,8 +597,10 @@ function loop(t){
       physics.velocityY = 0;
       physics.isGrounded = true;
     }
-    // emit landing particles
-    for(let i = 0; i < 5; i++) {
+    // emit landing particles (respect particle quality)
+    const pq = window.graphicsSettings && window.graphicsSettings.particleQuality ? window.graphicsSettings.particleQuality : 'medium';
+    const landingCount = (pq === 'low') ? 2 : 5;
+    for(let i = 0; i < landingCount; i++) {
       addParticle(player.x + (Math.random()-0.5)*20, player.y + (Math.random()-0.5)*20, 
                   (Math.random()-0.5)*100, -50, 0.3, '#999');
     }
@@ -755,9 +785,11 @@ function draw(){
     }
   }
 
-  // draw powerups
+  // draw powerups (cull off-screen for performance)
   for(const p of powerups) {
     const ps = worldToScreen(p.x, p.y);
+    const margin = 64; // allow a bit of margin for pop-in
+    if(ps.x < -margin || ps.x > viewW + margin || ps.y < -margin || ps.y > viewH + margin) continue;
     const alpha = Math.min(1, p.lifetime);
     if(p.type === 'speed') ctx.fillStyle = `rgba(255, 165, 0, ${alpha})`;
     else if(p.type === 'shield') ctx.fillStyle = `rgba(0, 150, 255, ${alpha})`;
@@ -773,13 +805,18 @@ function draw(){
     ctx.stroke();
   }
 
-  // draw particles
+  // draw particles (cull off-screen and set alpha safely)
   for(const p of particles) {
     const ps = worldToScreen(p.x, p.y);
-    const alpha = p.life / p.maxLife;
-    ctx.fillStyle = typeof p.color === 'string' && p.color.includes('rgba') 
-      ? p.color.replace(/[\d.]+\)/, alpha + ')')
-      : p.color;
+    const margin = 32;
+    if(ps.x < -margin || ps.x > viewW + margin || ps.y < -margin || ps.y > viewH + margin) continue;
+    const alpha = Math.max(0, Math.min(1, p.life / p.maxLife));
+    if(typeof p.color === 'string' && p.color.includes('rgba')) {
+      // replace the final alpha value inside rgba(...) with computed alpha
+      ctx.fillStyle = p.color.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/, `rgba($1,$2,$3,${alpha})`);
+    } else {
+      ctx.fillStyle = p.color;
+    }
     ctx.beginPath();
     ctx.arc(ps.x, ps.y, Math.max(1, 3 * alpha), 0, Math.PI*2);
     ctx.fill();
@@ -958,6 +995,11 @@ function applyGraphicsSettings(){
   else if(s.shadowQuality === 'medium') window.setGraphics && window.setGraphics('medium');
   else window.setGraphics && window.setGraphics('high');
 
+  // Throttle heuristics (simple targetFPS based on quality)
+  if(!s.targetFPS){
+    s.targetFPS = (s.shadowQuality === 'off' || s.particleQuality === 'low') ? 30 : 60;
+  }
+
   // Update DOM theme
   if(s.uiTheme === 'light') document.body.classList.add('theme-light'); else document.body.classList.remove('theme-light');
 
@@ -1076,6 +1118,79 @@ Object.defineProperty(window.Game, 'headstart', { get: ()=> headstart });
 window.player = window.Game.player;
 window.getTileAt = window.Game.getTileAt;
 window.mapData = window.Game.mapData;
+
+// ---------- Diagnostics and Debug Overlay ----------
+window.Diagnostics = window.Diagnostics || { errors: [], warnings: [], lastRun: null };
+function _updateDebugOverlay(){
+  const el = document.getElementById('debugOverlay');
+  if(!el) return;
+  if(!el.classList.contains('visible')) return;
+  const lines = [];
+  lines.push('<h4>Debug Overlay</h4>');
+  lines.push('<strong>FPS:</strong> ' + (typeof fps === 'number' ? fps : '--'));
+  lines.push('<strong>Particles:</strong> ' + particles.length + ' (pool: ' + particlePool.length + ')');
+  lines.push('<strong>Power-ups:</strong> ' + powerups.length);
+  lines.push('<strong>Player:</strong> ' + Math.round(player.x) + ',' + Math.round(player.y) + ' z=' + Math.round(player.z));
+  lines.push('<strong>Map:</strong> ' + (map ? (map.width + 'x' + map.height) : 'procedural'));
+  lines.push('<strong>Errors:</strong> ' + window.Diagnostics.errors.length);
+  if(window.Diagnostics.errors.length){
+    lines.push('<pre>' + window.Diagnostics.errors.slice(-6).map(e=> '['+e.when+'] '+e.message+'\n'+(e.stack||'')).join('\n\n') + '</pre>');
+  }
+  el.innerHTML = lines.join('<br>');
+}
+
+window.addEventListener('error', (ev)=>{
+  try{
+    window.Diagnostics.errors.push({when: new Date().toISOString(), message: (ev && ev.message) || 'error', stack: ev.error ? (ev.error.stack||'') : '', file: ev.filename || ''});
+    if(window.Diagnostics.errors.length > 50) window.Diagnostics.errors.shift();
+    _updateDebugOverlay();
+  }catch(e){console.error('Diagnostics handler failed', e)}
+});
+window.addEventListener('unhandledrejection', (ev)=>{
+  try{
+    const msg = (ev && ev.reason) ? (ev.reason.message || String(ev.reason)) : 'unhandledrejection';
+    window.Diagnostics.errors.push({when: new Date().toISOString(), message: msg, stack: ev.reason && ev.reason.stack ? ev.reason.stack : ''});
+    if(window.Diagnostics.errors.length > 50) window.Diagnostics.errors.shift();
+    _updateDebugOverlay();
+  }catch(e){console.error('Diagnostics handler failed', e)}
+});
+
+function runDiagnostics(){
+  const out = [];
+  out.push('Running quick diagnostics...');
+  // Check canvas / ctx
+  out.push('Canvas: ' + (!!canvas) + ' ctx: ' + (!!ctx));
+  try{
+    const s = worldToScreen(0,0);
+    out.push('worldToScreen(0,0): ' + s.x + ',' + s.y);
+  }catch(e){ out.push('worldToScreen failed: ' + e.message); }
+  try{
+    out.push('getTileAt(0,0): ' + getTileAt(0,0));
+  }catch(e){ out.push('getTileAt failed: ' + e.message); }
+
+  try{ addParticle(player.x, player.y, 0, -10, 0.2, '#fff'); updateParticles(0.016); out.push('particle system OK'); }catch(e){ out.push('particle error: ' + e.message); }
+  try{ spawnPowerup(); out.push('powerup spawn OK (count: ' + powerups.length + ')'); }catch(e){ out.push('powerup spawn failed: ' + e.message); }
+  try{ spawnSnake(); out.push('snake spawn OK (spawned: ' + snakeSpawned + ')'); }catch(e){ out.push('snake spawn failed: ' + e.message); }
+
+  // check that main loop doesn't throw during a short simulated run
+  try{
+    for(let i=0;i<3;i++){ updateParticles(0.016); updateVehiclePhysics(0.016); updateAnimation(0.016); }
+    out.push('short update cycle OK');
+  }catch(e){ out.push('short update failed: ' + e.message); }
+
+  window.Diagnostics.lastRun = {when: new Date().toISOString(), results: out};
+  const el = document.getElementById('debugOverlay');
+  if(el){ el.classList.add('visible'); el.innerHTML = '<h4>Diagnostics Results</h4><pre>' + out.join('\n') + '</pre>'; }
+  console.log('[DIAG]', out.join('\n'));
+}
+
+const runDiagnosticsBtn = document.getElementById('runDiagnostics');
+const showDebugBtn = document.getElementById('showDebug');
+if(runDiagnosticsBtn) runDiagnosticsBtn.addEventListener('click', runDiagnostics);
+if(showDebugBtn) showDebugBtn.addEventListener('click', ()=>{
+  const el = document.getElementById('debugOverlay'); if(!el) return;
+  if(el.classList.contains('visible')){ el.classList.remove('visible'); } else { el.classList.add('visible'); _updateDebugOverlay(); }
+});
 window.cam = window.Game.cam;
 
 window.setGraphics = (q)=>{ // default hook

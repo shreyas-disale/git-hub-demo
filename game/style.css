@@ -8,7 +8,6 @@ canvas#world{display:block; width:100vw; height:100vh}
 /* 3D container sits behind HUD/controls */
 #scene3d{pointer-events:none}
 #scene3d canvas{pointer-events:auto}
-
 /* Settings panel styles */
 #settingsPanel{position:fixed;right:12px;top:60px;z-index:12;width:300px;background:rgba(10,10,10,0.95);color:#fff;padding:12px;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.6);font-family:Segoe UI,Arial;max-height:80vh;overflow-y:auto}
 #settingsPanel.hidden{display:none}
@@ -31,5 +30,11 @@ body.theme-light #charDesc{color:#333}
 
 #settingsPanel button{margin-left:6px;padding:4px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);color:#fff;cursor:pointer;transition:all 0.2s}
 #settingsPanel button:hover{background:rgba(255,255,255,0.08);border-color:rgba(255,255,255,0.15)}
+
+/* Debug overlay */
+#debugOverlay{display:none}
+#debugOverlay.visible{display:block}
+#debugOverlay h4{margin:0 0 6px 0;font-size:13px;color:#ffd479}
+#debugOverlay pre{white-space:pre-wrap;font-size:12px;color:#fff;margin:6px 0;padding:6px;background:rgba(255,255,255,0.03);border-radius:4px;overflow:auto}
 body.theme-light #settingsPanel button{border-color:rgba(0,0,0,0.08);background:rgba(0,0,0,0.02);color:#111}
 body.theme-light #settingsPanel button:hover{background:rgba(0,0,0,0.05)}

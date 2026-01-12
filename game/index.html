@@ -9,6 +9,7 @@
 <body>
   <div id="hud">Use WASD / Arrow keys to move. Move the mouse to look around.</div>
   <div id="fpsCounter" title="Current frames per second" style="position:fixed;left:10px;top:46px;z-index:12;color:#fff;font-family:Segoe UI,Arial;font-size:13px">FPS: --</div>
+  <div id="debugOverlay" class="hidden" title="Debug overlay" style="position:fixed;right:10px;top:10px;z-index:60;width:320px;max-height:60vh;overflow:auto;padding:8px;border-radius:8px;background:rgba(0,0,0,0.7);font-size:12px;color:#fff;display:none"></div>
   <div id="controls">
     <label for="perspective">Perspective</label>
     <select id="perspective">
@@ -96,6 +97,13 @@
         <option value="dark" selected>Dark</option>
         <option value="light">Light</option>
       </select>
+    </div>
+    <div class="setting-row">
+      <label>Diagnostics</label>
+      <div>
+        <button id="runDiagnostics">Run Diagnostics</button>
+        <button id="showDebug">Show Debug</button>
+      </div>
     </div>
     <div style="text-align:right;margin-top:8px"><button id="settingsClose">Close</button></div>
   </div>
